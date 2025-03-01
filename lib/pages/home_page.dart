@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:greydo/utils/util_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/todo_list.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,8 +14,22 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<List<dynamic>> toDoList = []; // Each task is [description, isCompleted, dateTime]
+  List<List<dynamic>> toDoList =
+      []; // Each task is [description, isCompleted, dateTime]
   final TextEditingController _controller = TextEditingController();
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
+  /// Initialize notification plugin
+  Future<void> _initializeNotifications() async {
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings(
+          'app_icon',
+        ); // Replace 'app_icon' with your icon name
+    final InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
 
   /// Save tasks to SharedPreferences
   Future<void> _saveTasks() async {
@@ -34,12 +50,54 @@ class _HomePageState extends State<HomePage> {
                 .map((task) => jsonDecode(task) as List<dynamic>)
                 .toList();
       });
+      // Reschedule notifications for loaded tasks
+      for (int i = 0; i < toDoList.length; i++) {
+        if (!toDoList[i][1] && toDoList[i][2] is DateTime) {
+          _scheduleNotification(i, toDoList[i][0], toDoList[i][2]);
+        }
+      }
     }
+  }
+
+  /// Schedule a notification for a task
+  Future<void> _scheduleNotification(
+    int index,
+    String title,
+    DateTime scheduledDate,
+  ) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'your_channel_id',
+          'Your Channel Name',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      index, // Unique ID for the notification
+      "Task Reminder",
+      title,
+      tz.TZDateTime.from(scheduledDate, tz.local), // Scheduled date and time
+      platformChannelSpecifics,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  /// Cancel a notification for a task
+  Future<void> _cancelNotification(int index) async {
+    await flutterLocalNotificationsPlugin.cancel(index);
   }
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications(); // Initialize notifications
     _loadTasks();
   }
 
@@ -111,16 +169,24 @@ class _HomePageState extends State<HomePage> {
                     toDoList: toDoList,
                     index: index,
                     taskCompleted: toDoList[index][1],
-                    onChecked: (value) {
+                    onChecked: (value) async {
                       setState(() {
                         toDoList[index][1] = value ?? false;
                       });
+                      if (value == true) {
+                        await _cancelNotification(
+                          index,
+                        ); // Cancel notification when task is completed
+                      }
                       _saveTasks();
                     },
-                    onDelete: () {
+                    onDelete: () async {
                       setState(() {
                         toDoList.removeAt(index);
                       });
+                      await _cancelNotification(
+                        index,
+                      ); // Cancel notification when task is deleted
                       _saveTasks();
                     },
                   );
@@ -164,6 +230,10 @@ class _HomePageState extends State<HomePage> {
               ]);
               _controller.clear();
             });
+
+            // Schedule notification for the new task
+            _scheduleNotification(0, toDoList[0][0], dateTime);
+
             _saveTasks();
           }
         },
