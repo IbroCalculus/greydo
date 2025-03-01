@@ -12,14 +12,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<List<dynamic>> toDoList = []; // List of tasks, where each task is [description, isCompleted]
+  List<List<dynamic>> toDoList =
+      []; // Each task is [description, isCompleted, dateTime]
   final TextEditingController _controller = TextEditingController();
 
   /// Save tasks to SharedPreferences
   Future<void> _saveTasks() async {
     final prefs = await SharedPreferences.getInstance();
-    // Encode the list of tasks into a list of JSON strings
-    List<String> encodedList = toDoList.map((task) => jsonEncode(task)).toList();
+    List<String> encodedList =
+        toDoList.map((task) => jsonEncode(task)).toList();
     await prefs.setStringList("tasks", encodedList);
   }
 
@@ -29,8 +30,10 @@ class _HomePageState extends State<HomePage> {
     List<String>? savedTasks = prefs.getStringList("tasks");
     if (savedTasks != null) {
       setState(() {
-        // Decode the list of JSON strings back into a list of tasks
-        toDoList = savedTasks.map((task) => jsonDecode(task) as List<dynamic>).toList();
+        toDoList =
+            savedTasks
+                .map((task) => jsonDecode(task) as List<dynamic>)
+                .toList();
       });
     }
   }
@@ -38,12 +41,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadTasks(); // Load tasks when the widget initializes
+    _loadTasks();
   }
 
   @override
   void dispose() {
-    _saveTasks(); // Save tasks when the widget is disposed
+    _saveTasks();
     _controller.dispose();
     super.dispose();
   }
@@ -57,7 +60,10 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 10.0,
+            ),
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
@@ -108,15 +114,15 @@ class _HomePageState extends State<HomePage> {
                     taskCompleted: toDoList[index][1],
                     onChecked: (value) {
                       setState(() {
-                        toDoList[index][1] = value ?? false; // Update the completion state
+                        toDoList[index][1] = value ?? false;
                       });
-                      _saveTasks(); // Save the updated task list
+                      _saveTasks();
                     },
                     onDelete: () {
                       setState(() {
-                        toDoList.removeAt(index); // Remove the task
+                        toDoList.removeAt(index);
                       });
-                      _saveTasks(); // Save the updated task list
+                      _saveTasks();
                     },
                   );
                 },
@@ -125,22 +131,42 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           if (_controller.text.isEmpty) {
             return;
           }
-          setState(() {
-            // Add a new task with the first letter capitalized and completion state set to false
-            toDoList.insert(
-              0,
-              [
-                _controller.text[0].toUpperCase() + _controller.text.substring(1).toLowerCase(),
-                false,
-              ],
+          DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+          );
+
+          TimeOfDay? pickedTime = await showTimePicker(
+            context: context,
+            initialTime: TimeOfDay.now(),
+          );
+
+          if (pickedDate != null && pickedTime != null) {
+            DateTime dateTime = DateTime(
+              pickedDate.year,
+              pickedDate.month,
+              pickedDate.day,
+              pickedTime.hour,
+              pickedTime.minute,
             );
-            _controller.clear(); // Clear the text field
-          });
-          _saveTasks(); // Save the updated task list
+
+            setState(() {
+              toDoList.insert(0, [
+                _controller.text[0].toUpperCase() +
+                    _controller.text.substring(1).toLowerCase(),
+                false,
+                dateTime,
+              ]);
+              _controller.clear();
+            });
+            _saveTasks();
+          }
         },
         child: const Icon(Icons.add),
       ),

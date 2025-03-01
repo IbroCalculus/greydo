@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:intl/intl.dart'; // For formatting date and time
 import 'package:greydo/utils/util_colors.dart';
 
 class TodoList extends StatefulWidget {
@@ -8,7 +9,8 @@ class TodoList extends StatefulWidget {
     required this.toDoList,
     required this.index,
     required this.taskCompleted,
-    this.onChecked, required this.onDelete,
+    this.onChecked,
+    required this.onDelete,
   });
 
   final List toDoList;
@@ -22,12 +24,15 @@ class TodoList extends StatefulWidget {
 }
 
 class _TodoListState extends State<TodoList> {
-  bool isChecked = false;
-
   @override
   Widget build(BuildContext context) {
+    DateTime? taskDateTime = widget.toDoList[widget.index][2];
+    String formattedDateTime = taskDateTime != null
+        ? DateFormat('yyyy-MM-dd hh:mm a').format(taskDateTime)
+        : 'No date set';
+
     return Padding(
-      padding: EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 0),
+      padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 0),
       child: Slidable(
         endActionPane: ActionPane(
           motion: StretchMotion(),
@@ -54,19 +59,31 @@ class _TodoListState extends State<TodoList> {
               Checkbox(
                 checkColor: Colors.black,
                 activeColor: Colors.white,
-                side: BorderSide(color: Colors.white, ),
+                side: const BorderSide(color: Colors.white),
                 value: widget.taskCompleted,
                 onChanged: widget.onChecked,
               ),
               Expanded(
-                child: Text(
-                  widget.toDoList[widget.index][0],
-                  // overflow: ,
-                  style: TextStyle(color: Colors.white, fontSize: 18.0, decoration: widget.taskCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                  decorationColor: Colors.red,
-                  decorationThickness: 5.0,
-                    decorationStyle: TextDecorationStyle.solid
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.toDoList[widget.index][0],
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.0,
+                        decoration:
+                        widget.taskCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        decorationColor: Colors.red,
+                        decorationThickness: 5.0,
+                        decorationStyle: TextDecorationStyle.solid,
+                      ),
+                    ),
+                    Text(
+                      formattedDateTime,
+                      style: const TextStyle(color: Colors.grey, fontSize: 14.0),
+                    ),
+                  ],
                 ),
               ),
             ],
