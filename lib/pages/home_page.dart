@@ -12,8 +12,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<List<dynamic>> toDoList =
-      []; // Each task is [description, isCompleted, dateTime]
+  List<List<dynamic>> toDoList = []; // Each task is [description, isCompleted, dateTime]
   final TextEditingController _controller = TextEditingController();
 
   /// Save tasks to SharedPreferences
