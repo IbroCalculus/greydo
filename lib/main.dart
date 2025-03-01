@@ -1,7 +1,6 @@
+import 'package:GreyDo/pages/home_page.dart';
+import 'package:GreyDo/utils/util_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:greydo/pages/home_page.dart';
-import 'package:greydo/pages/test_page.dart';
-import 'package:greydo/utils/util_colors.dart';
 
 void main() {
   runApp(const MyApp());

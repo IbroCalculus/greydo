@@ -1,5 +1,5 @@
-name: greydo
-description: "A new Flutter project."
+name: GreyDo
+description: "A todo application with notification functionality built with Flutter, dart framework."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
