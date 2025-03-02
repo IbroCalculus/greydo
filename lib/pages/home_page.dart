@@ -33,24 +33,61 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Save tasks to SharedPreferences
+  // Future<void> _saveTasks() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   List<String> encodedList =
+  //       toDoList.map((task) => jsonEncode(task)).toList();
+  //   await prefs.setStringList("tasks", encodedList);
+  // }
   Future<void> _saveTasks() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> encodedList =
-        toDoList.map((task) => jsonEncode(task)).toList();
+    List<String> encodedList = toDoList.map((task) {
+      return jsonEncode([
+        task[0], // Task description
+        task[1], // Task completion status
+        task[2]?.toIso8601String(), // Convert DateTime to String
+      ]);
+    }).toList();
     await prefs.setStringList("tasks", encodedList);
   }
 
+
   /// Load tasks from SharedPreferences
+  // Future<void> _loadTasks() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   List<String>? savedTasks = prefs.getStringList("tasks");
+  //   if (savedTasks != null) {
+  //     setState(() {
+  //       toDoList =
+  //           savedTasks
+  //               .map((task) => jsonDecode(task) as List<dynamic>)
+  //               .toList();
+  //     });
+  //     // Reschedule notifications for loaded tasks
+  //     for (int i = 0; i < toDoList.length; i++) {
+  //       if (!toDoList[i][1] && toDoList[i][2] is DateTime) {
+  //         _scheduleNotification(i, toDoList[i][0], toDoList[i][2]);
+  //       }
+  //     }
+  //   }
+  // }
+
   Future<void> _loadTasks() async {
     final prefs = await SharedPreferences.getInstance();
     List<String>? savedTasks = prefs.getStringList("tasks");
+
     if (savedTasks != null) {
       setState(() {
-        toDoList =
-            savedTasks
-                .map((task) => jsonDecode(task) as List<dynamic>)
-                .toList();
+        toDoList = savedTasks.map((task) {
+          var decodedTask = jsonDecode(task);
+          return [
+            decodedTask[0], // Task description
+            decodedTask[1], // Task completion status
+            decodedTask[2] != null ? DateTime.parse(decodedTask[2]) : null, // Convert String back to DateTime
+          ];
+        }).toList();
       });
+
       // Reschedule notifications for loaded tasks
       for (int i = 0; i < toDoList.length; i++) {
         if (!toDoList[i][1] && toDoList[i][2] is DateTime) {
@@ -59,6 +96,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
 
   /// Schedule a notification for a task
   Future<void> _scheduleNotification(
