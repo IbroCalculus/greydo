@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/local_notification_service.dart';
 import '../utils/todo_list.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -15,8 +17,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<List<dynamic>> toDoList =
-      []; // Each task is [description, isCompleted, dateTime]
+  List<List<dynamic>> toDoList = []; // Each task is [description, isCompleted, dateTime]
   final TextEditingController _controller = TextEditingController();
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
@@ -25,20 +26,12 @@ class _HomePageState extends State<HomePage> {
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings(
-          'app_icon',
+          'launcher_icon',
         ); // Replace 'app_icon' with your icon name
     final InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
-
-  /// Save tasks to SharedPreferences
-  // Future<void> _saveTasks() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   List<String> encodedList =
-  //       toDoList.map((task) => jsonEncode(task)).toList();
-  //   await prefs.setStringList("tasks", encodedList);
-  // }
   Future<void> _saveTasks() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> encodedList = toDoList.map((task) {
@@ -50,27 +43,6 @@ class _HomePageState extends State<HomePage> {
     }).toList();
     await prefs.setStringList("tasks", encodedList);
   }
-
-
-  /// Load tasks from SharedPreferences
-  // Future<void> _loadTasks() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   List<String>? savedTasks = prefs.getStringList("tasks");
-  //   if (savedTasks != null) {
-  //     setState(() {
-  //       toDoList =
-  //           savedTasks
-  //               .map((task) => jsonDecode(task) as List<dynamic>)
-  //               .toList();
-  //     });
-  //     // Reschedule notifications for loaded tasks
-  //     for (int i = 0; i < toDoList.length; i++) {
-  //       if (!toDoList[i][1] && toDoList[i][2] is DateTime) {
-  //         _scheduleNotification(i, toDoList[i][0], toDoList[i][2]);
-  //       }
-  //     }
-  //   }
-  // }
 
   Future<void> _loadTasks() async {
     final prefs = await SharedPreferences.getInstance();
@@ -182,7 +154,7 @@ class _HomePageState extends State<HomePage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                "$completedTaskCount of ${toDoList.length}",
+                "Completed $completedTaskCount of ${toDoList.length}",
                 style: const TextStyle(fontSize: 16.0, color: Colors.white),
               ),
             ),
@@ -237,6 +209,27 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           if (_controller.text.isEmpty) {
+            final materialBanner = MaterialBanner(
+              /// need to set following properties for best effect of awesome_snackbar_content
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              forceActionsBelow: true,
+              content: AwesomeSnackbarContent(
+                title: 'Missing content!!',
+                message: 'Type some task text into the textfield!',
+
+                /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
+                contentType: ContentType.failure,
+                // to configure for material banner
+                inMaterialBanner: true,
+              ),
+              actions: const [SizedBox.shrink()],
+            );
+
+            ScaffoldMessenger.of(context)
+              ..hideCurrentMaterialBanner()
+              ..showMaterialBanner(materialBanner);
+
             return;
           }
           DateTime? pickedDate = await showDatePicker(
